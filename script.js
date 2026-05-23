@@ -24,17 +24,44 @@ fetch('https://ipapi.co/json/')
         userGeo.ip = data.ip;
         userGeo.city = data.city;
         userGeo.country = data.country_name;
-    })
-    .catch(err => console.log("Failed to fetch geo data", err));
-
 // Anti-Bot Detection Flags
 let isBot = false;
 let userInteracted = false;
 
-// 1. Interaction Tracking
+// Lead Intel Variables
+const stepTiming = {};
+let lastStepTime = Date.now();
+let totalCharsTyped = 0;
+let firstTypeTime = null;
+let isSubmitted = false;
+
+// 1. Interaction & Typing Tracking
 document.addEventListener('mousemove', () => { userInteracted = true; }, { once: true });
 document.addEventListener('touchstart', () => { userInteracted = true; }, { once: true });
 document.addEventListener('keydown', () => { userInteracted = true; }, { once: true });
+
+document.addEventListener('input', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if (!firstTypeTime) firstTypeTime = Date.now();
+        totalCharsTyped++;
+    }
+});
+
+// Ghost Lead Catcher
+window.addEventListener('beforeunload', () => {
+    if (!isSubmitted && currentStep > 2 && !isBot) {
+        const phone = document.getElementById('phone').value;
+        if (phone) {
+            supabase.from('leads').insert([{
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: phone,
+                status: 'Abandoned',
+                intel: { last_step_reached: currentStep, abandoned: true }
+            }]).then(() => {});
+        }
+    }
+});
 
 // 2. Headless Browser Detection
 if (navigator.webdriver) isBot = true;
@@ -70,6 +97,11 @@ function updateProgress() {
 }
 
 function nextStep() {
+    // Record Hesitation Time for outgoing step
+    const timeSpent = Math.floor((Date.now() - lastStepTime) / 1000);
+    stepTiming[`step_${currentStep}`] = timeSpent;
+    lastStepTime = Date.now();
+
     const currentElem = document.getElementById(`step-${currentStep}`);
     currentElem.classList.add('exit');
     
@@ -173,6 +205,30 @@ async function submitForm() {
         return;
     }
 
+    isSubmitted = true;
+    stepTiming[`step_${currentStep}`] = Math.floor((Date.now() - lastStepTime) / 1000);
+
+    // Calculate Enthusiasm Score
+    let enthusiasmScore = 50;
+    if (firstTypeTime && totalCharsTyped > 10) {
+        const typingDuration = (Date.now() - firstTypeTime) / 1000;
+        const charsPerSec = totalCharsTyped / typingDuration;
+        if (charsPerSec > 5) enthusiasmScore += 20;
+        else if (charsPerSec < 2) enthusiasmScore -= 10;
+    }
+    const visionLength = document.getElementById('vision')?.value?.length || 0;
+    if (visionLength > 80) enthusiasmScore += 20;
+    else if (visionLength < 20) enthusiasmScore -= 10;
+    if (timeOnPageSeconds < 45) enthusiasmScore += 10;
+    else if (timeOnPageSeconds > 180) enthusiasmScore -= 15;
+    enthusiasmScore = Math.min(Math.max(enthusiasmScore, 0), 100);
+
+    const intelPayload = {
+        hesitation_by_step: stepTiming,
+        enthusiasm_score: enthusiasmScore,
+        total_chars_typed: totalCharsTyped
+    };
+
     // Collect all data
     const finalData = {
         ...formData,
@@ -213,7 +269,9 @@ async function submitForm() {
                     time_on_page_seconds: timeOnPageSeconds,
                     ip_address: userGeo.ip,
                     geo_city: userGeo.city,
-                    geo_country: userGeo.country
+                    geo_country: userGeo.country,
+                    status: 'Completed',
+                    intel: intelPayload
                 }
             ]);
 
