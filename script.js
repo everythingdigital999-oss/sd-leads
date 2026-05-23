@@ -1,6 +1,6 @@
 const supabaseUrl = 'https://dspglmqqumfowqhbetmo.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzcGdsbXFxdW1mb3dxaGJldG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MTQyNTksImV4cCI6MjA5NTA5MDI1OX0.SL7cIWsiKrMddcfesRmgOB_s8mYEkE6xPeirB6jB6V4';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentStep = 1;
 const totalSteps = 9;
@@ -98,7 +98,7 @@ window.addEventListener('beforeunload', () => {
     if (!isSubmitted && currentStep > 2 && !isBot) {
         const phone = document.getElementById('phone').value;
         if (phone) {
-            supabase.from('leads').insert([{
+            supabaseClient.from('leads').insert([{
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
                 phone: phone,
@@ -296,7 +296,7 @@ async function submitForm() {
     };
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('leads')
             .insert([
                 {
