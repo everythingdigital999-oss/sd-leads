@@ -24,6 +24,52 @@ fetch('https://ipapi.co/json/')
         userGeo.ip = data.ip;
         userGeo.city = data.city;
         userGeo.country = data.country_name;
+    })
+    .catch(err => console.log("Failed to fetch geo data", err));
+
+// Haptic Feedback Helper
+function triggerHaptic(pattern = 15) {
+    if (navigator.vibrate) {
+        try { navigator.vibrate(pattern); } catch(e) {}
+    }
+}
+
+// Gyroscope Parallax Helper
+let gyroEnabled = false;
+function initGyro() {
+    if (gyroEnabled) return;
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(state => {
+            if (state === 'granted') {
+                gyroEnabled = true;
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }).catch(console.error);
+    } else {
+        gyroEnabled = true;
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+}
+
+function handleOrientation(event) {
+    let x = event.gamma || 0; 
+    let y = event.beta || 0;  
+    if (x > 90) x = 90; if (x < -90) x = -90;
+    if (y > 90) y = 90; if (y < -90) y = -90;
+
+    const xOffset = (x / 90) * 40; 
+    const yOffset = (y / 90) * 40;
+    
+    document.documentElement.style.setProperty('--gx', `${xOffset}px`);
+    document.documentElement.style.setProperty('--gy', `${yOffset}px`);
+    document.documentElement.style.setProperty('--gx-inv', `${-xOffset}px`);
+    document.documentElement.style.setProperty('--gy-inv', `${-yOffset}px`);
+}
+
+document.addEventListener('click', () => {
+    initGyro();
+}, { once: true });
+
 // Anti-Bot Detection Flags
 let isBot = false;
 let userInteracted = false;
@@ -97,6 +143,7 @@ function updateProgress() {
 }
 
 function nextStep() {
+    triggerHaptic(10);
     // Record Hesitation Time for outgoing step
     const timeSpent = Math.floor((Date.now() - lastStepTime) / 1000);
     stepTiming[`step_${currentStep}`] = timeSpent;
@@ -155,6 +202,7 @@ function handleStep2() {
 }
 
 function selectOption(category, value, element) {
+    triggerHaptic(15);
     formData[category] = value;
     
     // UI Update
@@ -169,6 +217,7 @@ function selectOption(category, value, element) {
 }
 
 function toggleMultiOption(category, value, element) {
+    triggerHaptic(15);
     const index = formData[category].indexOf(value);
     if (index > -1) {
         formData[category].splice(index, 1);
@@ -200,6 +249,7 @@ async function submitForm() {
     // IF BOT: Block submission and prevent success screen (avoids fake ad conversions)
     if (isBot) {
         console.warn("Bot activity detected. Blocking submission.");
+        triggerHaptic([50, 100, 50]);
         alert("Oops! Something went wrong processing your request. Please try again later.");
         submitBtn.innerText = originalBtnText;
         return;
@@ -278,6 +328,7 @@ async function submitForm() {
         if (error) throw error;
         
         console.log("Successfully submitted to Supabase");
+        triggerHaptic([30, 50, 30, 50, 50]);
         
         // Transition to success
         const currentElem = document.getElementById(`step-9`);
@@ -292,6 +343,7 @@ async function submitForm() {
 
     } catch (err) {
         console.error("Error submitting to Supabase:", err);
+        triggerHaptic([50, 100, 50]);
         if (err.code === '23505') {
             alert("It looks like you've already submitted a request with this phone number. We'll be in touch soon!");
         } else {

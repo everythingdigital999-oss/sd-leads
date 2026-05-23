@@ -50,6 +50,8 @@ body {
     overflow: hidden;
     z-index: 1;
     pointer-events: none;
+    transform: translate(var(--gx, 0px), var(--gy, 0px));
+    transition: transform 0.1s ease-out;
 }
 
 .blob {
