@@ -1,3 +1,7 @@
+const supabaseUrl = 'https://dspglmqqumfowqhbetmo.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzcGdsbXFxdW1mb3dxaGJldG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MTQyNTksImV4cCI6MjA5NTA5MDI1OX0.SL7cIWsiKrMddcfesRmgOB_s8mYEkE6xPeirB6jB6V4';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 let currentStep = 1;
 const totalSteps = 9;
 const formData = {
@@ -106,7 +110,11 @@ function toggleMultiOption(category, value, element) {
     }
 }
 
-function submitForm() {
+async function submitForm() {
+    const submitBtn = document.querySelector('#step-9 .btn');
+    const originalBtnText = submitBtn.innerText;
+    submitBtn.innerText = "SENDING... 🚀";
+    
     // Collect all data
     const finalData = {
         ...formData,
@@ -123,18 +131,46 @@ function submitForm() {
         }
     };
 
-    console.log("Submitting to Social Daddy:", finalData);
-    
-    // Transition to success
-    const currentElem = document.getElementById(`step-9`);
-    currentElem.classList.add('exit');
-    
-    setTimeout(() => {
-        currentElem.classList.remove('active', 'exit');
-        document.getElementById('step-success').classList.add('active');
-        document.getElementById('progressBar').style.width = '100%';
-        document.getElementById('progressText').innerText = "DONE! 😎";
-    }, 500);
+    try {
+        const { data, error } = await supabase
+            .from('leads')
+            .insert([
+                {
+                    name: finalData.name,
+                    email: finalData.email,
+                    phone: finalData.phone,
+                    brand: finalData.brand,
+                    location: finalData.location,
+                    services: finalData.services,
+                    building: finalData.building,
+                    goal: finalData.goal,
+                    budget: finalData.budget,
+                    timeline: finalData.timeline,
+                    vision: finalData.vision,
+                    socials: finalData.socials
+                }
+            ]);
+
+        if (error) throw error;
+        
+        console.log("Successfully submitted to Supabase");
+        
+        // Transition to success
+        const currentElem = document.getElementById(`step-9`);
+        currentElem.classList.add('exit');
+        
+        setTimeout(() => {
+            currentElem.classList.remove('active', 'exit');
+            document.getElementById('step-success').classList.add('active');
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('progressText').innerText = "DONE! 😎";
+        }, 500);
+
+    } catch (err) {
+        console.error("Error submitting to Supabase:", err);
+        alert("Oops! Something went wrong saving your details. Please check console.");
+        submitBtn.innerText = originalBtnText;
+    }
 }
 
 // Enter key support
