@@ -152,7 +152,8 @@ function updateProgress() {
     document.getElementById('progressBar').style.width = `${progress}%`;
     
     const textIndex = Math.min(Math.floor((currentStep - 1)), progressTexts.length - 1);
-    document.getElementById('progressText').innerText = progressTexts[textIndex];
+    const progressTextElem = document.getElementById('progressText');
+    if (progressTextElem) progressTextElem.innerText = progressTexts[textIndex];
 }
 
 function nextStep() {
@@ -351,7 +352,8 @@ async function submitForm() {
             currentElem.classList.remove('active', 'exit');
             document.getElementById('step-success').classList.add('active');
             document.getElementById('progressBar').style.width = '100%';
-            document.getElementById('progressText').innerText = "DONE! 😎";
+            const progressTextElem = document.getElementById('progressText');
+            if (progressTextElem) progressTextElem.innerText = "DONE! 😎";
         }, 500);
 
     } catch (err) {
