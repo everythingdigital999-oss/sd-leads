@@ -28,6 +28,30 @@ body {
     min-height: 100vh;
 }
 
+/* Header & Logo */
+.header-logo {
+    width: 100%;
+    padding: 30px 20px 0 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+}
+
+.brand-logo {
+    max-height: 70px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(255, 255, 255, 0.15));
+    animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 #app {
     width: 100%;
     min-height: 100vh;
