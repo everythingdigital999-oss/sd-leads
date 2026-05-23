@@ -165,17 +165,11 @@ async function submitForm() {
     // 5. Interaction Check
     if (!userInteracted) isBot = true;
 
-    // IF BOT: Simulate success and silently drop
+    // IF BOT: Block submission and prevent success screen (avoids fake ad conversions)
     if (isBot) {
-        console.warn("Bot activity detected. Simulating success.");
-        const currentElem = document.getElementById(`step-9`);
-        currentElem.classList.add('exit');
-        setTimeout(() => {
-            currentElem.classList.remove('active', 'exit');
-            document.getElementById('step-success').classList.add('active');
-            document.getElementById('progressBar').style.width = '100%';
-            document.getElementById('progressText').innerText = "DONE! 😎";
-        }, 500);
+        console.warn("Bot activity detected. Blocking submission.");
+        alert("Oops! Something went wrong processing your request. Please try again later.");
+        submitBtn.innerText = originalBtnText;
         return;
     }
 
