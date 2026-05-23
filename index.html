@@ -36,6 +36,12 @@
                 <input type="text" id="name" placeholder="Your name" autocomplete="name">
                 <p class="input-hint">Your superhero/business name works too.</p>
             </div>
+            
+            <!-- Honeypot Trap (Anti-Bot) -->
+            <div class="input-group" style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+                <label>Leave this field blank if you are human</label>
+                <input type="text" id="website_url_secondary" name="website_url_secondary" tabindex="-1" autocomplete="off">
+            </div>
             <div class="input-group" style="display:none;" id="email-group">
                 <label>Where do we send the good stuff? <span class="emoji-bounce">📩</span></label>
                 <input type="email" id="email" placeholder="you@somethingcool.com" autocomplete="email">

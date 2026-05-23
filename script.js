@@ -27,6 +27,20 @@ fetch('https://ipapi.co/json/')
     })
     .catch(err => console.log("Failed to fetch geo data", err));
 
+// Anti-Bot Detection Flags
+let isBot = false;
+let userInteracted = false;
+
+// 1. Interaction Tracking
+document.addEventListener('mousemove', () => { userInteracted = true; }, { once: true });
+document.addEventListener('touchstart', () => { userInteracted = true; }, { once: true });
+document.addEventListener('keydown', () => { userInteracted = true; }, { once: true });
+
+// 2. Headless Browser Detection
+if (navigator.webdriver) isBot = true;
+if (window.callPhantom || window._phantom || window.__nightmare) isBot = true;
+if (navigator.languages && navigator.languages.length === 0) isBot = true;
+
 const formData = {
     services: [],
     building: null,
@@ -140,6 +154,30 @@ async function submitForm() {
     
     // Calculate time spent
     const timeOnPageSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+    // 3. Timing Check (Bot if less than 10 seconds)
+    if (timeOnPageSeconds < 10) isBot = true;
+
+    // 4. Honeypot Check
+    const honeypot = document.getElementById('website_url_secondary')?.value;
+    if (honeypot) isBot = true;
+
+    // 5. Interaction Check
+    if (!userInteracted) isBot = true;
+
+    // IF BOT: Simulate success and silently drop
+    if (isBot) {
+        console.warn("Bot activity detected. Simulating success.");
+        const currentElem = document.getElementById(`step-9`);
+        currentElem.classList.add('exit');
+        setTimeout(() => {
+            currentElem.classList.remove('active', 'exit');
+            document.getElementById('step-success').classList.add('active');
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('progressText').innerText = "DONE! 😎";
+        }, 500);
+        return;
+    }
 
     // Collect all data
     const finalData = {
