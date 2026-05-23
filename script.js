@@ -93,18 +93,31 @@ document.addEventListener('input', (e) => {
     }
 });
 
-// Ghost Lead Catcher
-window.addEventListener('beforeunload', () => {
-    if (!isSubmitted && currentStep > 2 && !isBot) {
+// Ghost Lead Catcher (Mobile Friendly)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && !isSubmitted && currentStep > 2 && !isBot) {
         const phone = document.getElementById('phone').value;
         if (phone) {
-            supabaseClient.from('leads').insert([{
+            const payload = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
                 phone: phone,
                 status: 'Abandoned',
                 intel: { last_step_reached: currentStep, abandoned: true }
-            }]).then(() => {});
+            };
+            
+            // Use fetch with keepalive because mobile browsers kill async supabase requests when closing tabs
+            fetch(`${supabaseUrl}/rest/v1/leads?on_conflict=phone`, {
+                method: 'POST',
+                headers: {
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates'
+                },
+                body: JSON.stringify(payload),
+                keepalive: true
+            }).catch(() => {});
         }
     }
 });
@@ -298,7 +311,7 @@ async function submitForm() {
     try {
         const { data, error } = await supabaseClient
             .from('leads')
-            .insert([
+            .upsert([
                 {
                     name: finalData.name,
                     email: finalData.email,
@@ -323,7 +336,7 @@ async function submitForm() {
                     status: 'Completed',
                     intel: intelPayload
                 }
-            ]);
+            ], { onConflict: 'phone' });
 
         if (error) throw error;
         
