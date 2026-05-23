@@ -4,6 +4,29 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentStep = 1;
 const totalSteps = 9;
+
+// Advanced Tracking Variables
+let startTime = Date.now();
+let userGeo = { ip: null, city: null, country: null };
+let utmParams = { source: null, medium: null, campaign: null };
+let documentReferrer = document.referrer;
+
+// Parse UTMs
+const urlParams = new URLSearchParams(window.location.search);
+utmParams.source = urlParams.get('utm_source');
+utmParams.medium = urlParams.get('utm_medium');
+utmParams.campaign = urlParams.get('utm_campaign');
+
+// Fetch Geo Data
+fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => {
+        userGeo.ip = data.ip;
+        userGeo.city = data.city;
+        userGeo.country = data.country_name;
+    })
+    .catch(err => console.log("Failed to fetch geo data", err));
+
 const formData = {
     services: [],
     building: null,
@@ -115,6 +138,9 @@ async function submitForm() {
     const originalBtnText = submitBtn.innerText;
     submitBtn.innerText = "SENDING... 🚀";
     
+    // Calculate time spent
+    const timeOnPageSeconds = Math.floor((Date.now() - startTime) / 1000);
+
     // Collect all data
     const finalData = {
         ...formData,
@@ -147,7 +173,15 @@ async function submitForm() {
                     budget: finalData.budget,
                     timeline: finalData.timeline,
                     vision: finalData.vision,
-                    socials: finalData.socials
+                    socials: finalData.socials,
+                    referrer: documentReferrer,
+                    utm_source: utmParams.source,
+                    utm_medium: utmParams.medium,
+                    utm_campaign: utmParams.campaign,
+                    time_on_page_seconds: timeOnPageSeconds,
+                    ip_address: userGeo.ip,
+                    geo_city: userGeo.city,
+                    geo_country: userGeo.country
                 }
             ]);
 
@@ -168,7 +202,11 @@ async function submitForm() {
 
     } catch (err) {
         console.error("Error submitting to Supabase:", err);
-        alert("Oops! Something went wrong saving your details. Please check console.");
+        if (err.code === '23505') {
+            alert("It looks like you've already submitted a request with this phone number. We'll be in touch soon!");
+        } else {
+            alert("Oops! Something went wrong saving your details. Please try again.");
+        }
         submitBtn.innerText = originalBtnText;
     }
 }
